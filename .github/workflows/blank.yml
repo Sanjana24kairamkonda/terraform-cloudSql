@@ -1,0 +1,35 @@
+name: Terraform GCP VM
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v1
+      with:
+        terraform_version: 1.4.6
+
+    - name: Set up Google Cloud credentials
+      run: |
+        echo "${{ secrets.GCP_SA_KEY }}" | base64 --decode > terraform-sa-key.json
+
+    - name: Terraform Init
+      run: terraform init
+
+    - name: Terraform Plan
+      run: terraform plan -var-file="terraform.tfvars"
+
+    - name: Terraform Apply
+      run: terraform apply -auto-approve -var-file="terraform.tfvars"
