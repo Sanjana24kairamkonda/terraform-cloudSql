@@ -1,7 +1,7 @@
 provider "google" {
-  credentials = file("terraform-sa-key.json")
-  project = var.project_id
-  region  = var.region
+  credentials = file(var.gcp_credentials_file)
+  project     = var.project_id
+  region      = var.region
 }
 
 resource "google_sql_database_instance" "default" {
