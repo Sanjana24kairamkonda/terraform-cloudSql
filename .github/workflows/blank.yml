@@ -26,7 +26,7 @@ jobs:
         echo "${{ secrets.GCP_SA_KEY }}" | base64 --decode > $HOME/gcp-key.json
         echo "GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcp-key.json" >> $GITHUB_ENV
         ls -lah $HOME  # Debug: Check if the file exists
-        cat $HOME/gcp-key.json  # Debug: Print the contents (REMOVE THIS IN PRODUCTION)
+        # cat $HOME/gcp-key.json  # REMOVE THIS LINE IN PRODUCTION: Do not print the credentials
       shell: bash
 
     - name: Authenticate with Google Cloud
@@ -43,6 +43,8 @@ jobs:
 
     - name: Terraform Plan
       run: terraform plan -var-file="terraform.tfvars"
+      shell: bash
 
     - name: Terraform Apply
       run: terraform apply -auto-approve -var-file="terraform.tfvars"
+      shell: bash
