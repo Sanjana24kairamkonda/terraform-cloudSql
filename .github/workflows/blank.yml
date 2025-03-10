@@ -1,4 +1,4 @@
-name: Terraform GCP VM
+name: Terraform GCP Deployment
 
 on:
   push:
@@ -13,20 +13,33 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+    - name: Checkout Repository
+      uses: actions/checkout@v3
 
     - name: Set up Terraform
       uses: hashicorp/setup-terraform@v1
       with:
         terraform_version: 1.4.6
 
-    - name: Set up Google Cloud credentials
+    - name: Set up Google Cloud Credentials
       run: |
-        echo "${{ secrets.GCP_SA_KEY }}" | base64 --decode > terraform-sa-key.json
+        echo "${{ secrets.GCP_SA_KEY }}" | base64 --decode > $HOME/gcp-key.json
+        echo "GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcp-key.json" >> $GITHUB_ENV
+        ls -lah $HOME  # Debug: Check if the file exists
+        cat $HOME/gcp-key.json  # Debug: Print the contents (REMOVE THIS IN PRODUCTION)
+      shell: bash
+
+    - name: Authenticate with Google Cloud
+      run: |
+        gcloud auth activate-service-account --key-file=$HOME/gcp-key.json
+        gcloud auth list
+      shell: bash
 
     - name: Terraform Init
-      run: terraform init
+      run: |
+        echo "Using credentials: $GOOGLE_APPLICATION_CREDENTIALS"
+        terraform init
+      shell: bash
 
     - name: Terraform Plan
       run: terraform plan -var-file="terraform.tfvars"
