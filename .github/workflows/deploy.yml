@@ -28,19 +28,27 @@ jobs:
         gcloud sql backups create --instance=my-instance2
         echo "Backup created successfully!"
 
-    # Step 4: Upgrade Cloud SQL from MySQL 5.7 to MySQL 8.0
-    - name: Upgrade Cloud SQL Version
+    # Step 4: Start Upgrade Process
+    - name: Start Upgrade
+      id: upgrade
       run: |
-        gcloud sql instances patch my-instance2 --database-version=MYSQL_8_0 --quiet
-        echo "Cloud SQL upgrade initiated."
+        OPERATION_ID=$(gcloud sql instances patch my-instance2 --database-version=MYSQL_8_0 --quiet --format="value(name)")
+        echo "OPERATION_ID=$OPERATION_ID" >> $GITHUB_ENV
+        echo "Upgrade started with Operation ID: $OPERATION_ID"
 
-    # Step 5: Restart Cloud SQL Instance
+    # Step 5: Wait for Upgrade to Complete
+    - name: Wait for Upgrade to Complete
+      run: |
+        gcloud beta sql operations wait --project ${{ secrets.GCP_PROJECT_ID }} ${{ env.OPERATION_ID }}
+        echo "Upgrade operation completed successfully!"
+
+    # Step 6: Restart Cloud SQL Instance
     - name: Restart Cloud SQL Instance
       run: |
         gcloud sql instances restart my-instance2 --quiet
         echo "Cloud SQL instance restarted."
 
-    # Step 6: Verify Upgrade
+    # Step 7: Verify Upgrade
     - name: Verify Cloud SQL Version
       run: |
         gcloud sql instances describe my-instance2 | grep databaseVersion
