@@ -5,7 +5,7 @@ provider "google" {
 }
 
 resource "google_sql_database_instance" "default" {
-  name             = "my-instance"
+  name             = "my-instance2"
   region           = var.region
   database_version = "MYSQL_5_7"
 
