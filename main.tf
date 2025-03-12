@@ -24,3 +24,8 @@ resource "google_sql_user" "default_user" {
   instance = google_sql_database_instance.default.name
   password = var.database_password
 }
+
+variable "google_credentials_file" {
+  description = "Path to the GCP service account JSON key file"
+  type        = string
+}
