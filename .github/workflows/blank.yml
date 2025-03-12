@@ -1,50 +1,49 @@
-name: Terraform GCP Deployment
+name: Terraform Deployment
 
 on:
   push:
     branches:
-      - main
-  pull_request:
-    branches:
-      - main
+      - main  # Trigger on push to the 'main' branch
 
 jobs:
   terraform:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Repository
+    # Step 1: Checkout the code
+    - name: Checkout Code
       uses: actions/checkout@v3
 
-    - name: Set up Terraform
-      uses: hashicorp/setup-terraform@v1
+    # Step 2: Setup Terraform
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
       with:
-        terraform_version: 1.4.6
+        terraform_version: latest
 
-    - name: Set up Google Cloud Credentials
+    # Step 3: Decode and authenticate to Google Cloud using the service account key
+    - name: Authenticate to GCP
       run: |
-        echo "${{ secrets.GCP_SA_KEY }}" | base64 --decode > $HOME/gcp-key.json
-        echo "GOOGLE_APPLICATION_CREDENTIALS=$HOME/gcp-key.json" >> $GITHUB_ENV
-        ls -lah $HOME  # Debug: Check if the file exists
-        # cat $HOME/gcp-key.json  # REMOVE THIS LINE IN PRODUCTION: Do not print the credentials
-      shell: bash
+        # Decode the Base64 service account key and save it as gcp-key.json
+        echo "${{ secrets.GCP_SA_KEY }}" | base64 --decode > gcp-key.json
+        # Set GOOGLE_APPLICATION_CREDENTIALS to the service account key file
+        echo "GOOGLE_APPLICATION_CREDENTIALS=gcp-key.json" >> $GITHUB_ENV
+        # Authenticate using the decoded key
+        gcloud auth activate-service-account --key-file=gcp-key.json
+        # Set the project for gcloud
+        gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
 
-    - name: Authenticate with Google Cloud
-      run: |
-        gcloud auth activate-service-account --key-file=$HOME/gcp-key.json
-        gcloud auth list
-      shell: bash
+    # Step 4: Reinitialize Terraform
+    - name: Reinitialize Terraform
+      run: terraform init -reconfigure
 
-    - name: Terraform Init
-      run: |
-        echo "Using credentials: $GOOGLE_APPLICATION_CREDENTIALS"
-        terraform init
-      shell: bash
+    # Step 5: Plan Terraform changes
+    - name: Plan Terraform
+      run: terraform plan -var-file=terraform.tfvars -out=tfplan
 
-    - name: Terraform Plan
-      run: terraform plan -var-file="terraform.tfvars"
-      shell: bash
+    # Step 6: Apply Terraform changes
+    - name: Apply Terraform
+      run: terraform apply -auto-approve tfplan
 
-    - name: Terraform Apply
-      run: terraform apply -auto-approve -var-file="terraform.tfvars"
-      shell: bash
+    # Optional: Clean up the service account key file
+    - name: Clean up
+      run: rm gcp-key.json
